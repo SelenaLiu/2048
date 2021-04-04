@@ -18,6 +18,7 @@
 #define WHITE 0xFFFF
 #define GREY 0xC618
 #define BLACK 0x0000
+#define ORANGE 0xFC00
 
 #define ABS(x) (((x) > 0) ? (x) : -(x))
 
@@ -37,6 +38,10 @@
 #include <stdbool.h>
 
 volatile int pixel_buffer_start; // global variable
+int grid[4][4] = {{0, 0, 0, 0},
+				  {0, 0, 0, 0},
+				  {0, 0, 0, 0},
+				  {0, 0, 0, 0}};
 
 // subroutines
 void swap(int *x, int *y);
@@ -47,10 +52,12 @@ void plot_pixel(int x, int y, short int line_color);
 void draw_grid();
 void draw_box(int minX, int maxX, int minY, int maxY, short int colour);
 void black_screen();
+void draw_tile(int x, int y, int num);
+void draw_all_tiles();
 
 //variables
 #define n 8
-	/*
+/*
 #define midScreenX RESOLUTION_X / 2
 #define midScreenY RESOLUTION_Y / 2
 #define gridMinX midScreenX - midScreenY
@@ -58,6 +65,7 @@ void black_screen();
 #define gridSideLength gridMaxX - gridMinX
 #define boxSideLength (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4
 */
+
 int main(void)
 {
     volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
@@ -71,17 +79,25 @@ int main(void)
     wait_for_vsync();
     /* initialize a pointer to the pixel buffer, used by drawing functions */
     pixel_buffer_start = *pixel_ctrl_ptr;
+	black_screen();
     //black_screen(); // pixel_buffer_start points to the pixel buffer
     /* set back pixel buffer to start of SDRAM memory */
     *(pixel_ctrl_ptr + 1) = 0xC0000000;
     pixel_buffer_start = *(pixel_ctrl_ptr + 1); // we draw on the back buffer
 	
 	black_screen();
+	
+	int xPos = rand()%4;
+	int yPos = rand()%4;
+	grid[yPos][xPos] = 2;
+	char moves[4] = {'U', 'D', 'L', 'R'};
 
     while (1)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
 		draw_grid();
+		draw_all_tiles();
+		move_tiles(moves[rand()%4]);
 		
 		wait_for_vsync();
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
@@ -89,9 +105,46 @@ int main(void)
     }
 }
 
-// draws the grid of the game
-void draw_grid() {
-	// main constants, should move them to global
+//shifts all tiles on the grid depending on which direction
+void move_tiles(char input){
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			//Found tile
+			if(grid[row][col] != 0){
+				if(input == 'U' && row != 0){
+					grid[0][col] = grid[row][col];
+					grid[row][col] = 0;
+				}
+				else if(input == 'D' && row != 3){
+					grid[3][col] = grid[row][col];
+					grid[row][col] = 0;
+				}
+				else if(input == 'L' && col != 0){
+					grid[row][0] = grid[row][col];
+					grid[row][col] = 0;
+				}
+				else if(input == 'R' && col != 3){
+					grid[row][3] = grid[row][col];
+					grid[row][col] = 0;
+				}	
+			}
+		}
+	}		
+}
+
+//draws all the tiles on the current screen
+void draw_all_tiles(){
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			if(grid[row][col] != 0){
+				draw_tile(col, row, grid[row][col]);
+			}
+		}
+	}
+}
+
+//draws a specific tile at a given location
+void draw_tile(int x, int y, int num){
 	int midScreenX = RESOLUTION_X / 2;
     int midScreenY = RESOLUTION_Y / 2;
 	int gridMinX = midScreenX - midScreenY;
@@ -99,6 +152,24 @@ void draw_grid() {
 	int gridSideLength = gridMaxX - gridMinX;
 	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
 	
+	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x);
+	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y);
+	
+	draw_box(xStart, xStart + boxSideLength, yStart, yStart + boxSideLength, ORANGE);
+	
+}
+
+// draws the grid of the game
+void draw_grid() {
+	// main constants, should move them to global
+
+	int midScreenX = RESOLUTION_X / 2;
+    int midScreenY = RESOLUTION_Y / 2;
+	int gridMinX = midScreenX - midScreenY;
+	int gridMaxX = midScreenX + midScreenY;
+	int gridSideLength = gridMaxX - gridMinX;
+	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
+
 	// draw grid background
 	draw_box(gridMinX, gridMaxX, 0, RESOLUTION_Y, GREY);
 	
