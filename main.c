@@ -22,9 +22,8 @@
 
 #define ABS(x) (((x) > 0) ? (x) : -(x))
 
-/* Screen size. */
-#define RESOLUTION_X 320
-#define RESOLUTION_Y 240
+/* Global Variable */
+int resolutionX, resolutionY, n, midScreenX, midScreenY, gridMinX, gridMaxX, gridSideLength, boxSideLength;
 
 /* Constants for animation */
 #define GRID_LINE_WIDTH 8
@@ -65,18 +64,23 @@ void draw_tile(int x, int y, int num);
 void draw_all_tiles();
 
 //variables
-#define n 8
-/*
-#define midScreenX RESOLUTION_X / 2
-#define midScreenY RESOLUTION_Y / 2
-#define gridMinX midScreenX - midScreenY
-#define gridMaxX midScreenX + midScreenY
-#define gridSideLength gridMaxX - gridMinX
-#define boxSideLength (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4
-*/
+
+
 
 int main(void)
 {
+	//Assign values to global variables
+	//Can put this in a function
+	resolutionX= 320;
+	resolutionY = 240;
+	n = 8;
+	midScreenX = resolutionX / 2;
+	midScreenY = resolutionY / 2;
+	gridMinX = midScreenX - midScreenY;
+	gridMaxX = midScreenX + midScreenY;
+	gridSideLength = gridMaxX - gridMinX;
+	boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
+	
 	/* interrupt setup start */
 	set_A9_IRQ_stack(); // initialize the stack pointer for IRQ mode
 	config_GIC(); // configure the general interrupt controller
@@ -753,12 +757,13 @@ void draw_all_tiles(){
 
 //draws a specific tile at a given location
 void draw_tile(int x, int y, int num){
+	/*
 	int midScreenX = RESOLUTION_X / 2;
     int midScreenY = RESOLUTION_Y / 2;
 	int gridMinX = midScreenX - midScreenY;
 	int gridMaxX = midScreenX + midScreenY;
 	int gridSideLength = gridMaxX - gridMinX;
-	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
+	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;*/
 	
 	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x);
 	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y);
@@ -774,16 +779,16 @@ void draw_tile(int x, int y, int num){
 // draws the grid of the game
 void draw_grid() {
 	// main constants, should move them to global
-
+	/*
 	int midScreenX = RESOLUTION_X / 2;
     int midScreenY = RESOLUTION_Y / 2;
 	int gridMinX = midScreenX - midScreenY;
 	int gridMaxX = midScreenX + midScreenY;
 	int gridSideLength = gridMaxX - gridMinX;
-	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
+	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;*/
 
 	// draw grid background
-	draw_box(gridMinX, gridMaxX, 0, RESOLUTION_Y, GREY);
+	draw_box(gridMinX, gridMaxX, 0, resolutionY, GREY);
 	
 	// draw box spaces
 	for (int row = 0; row < 4; row ++) {
@@ -865,8 +870,8 @@ void draw_line(int x0, int y0, int x1, int y1, short int colour) {
 
 // clears the VGA screen
 void black_screen() {
-	for (int x = 0; x < RESOLUTION_X; x++) {
-		for (int y = 0; y < RESOLUTION_Y; y++) {
+	for (int x = 0; x < resolutionX; x++) {
+		for (int y = 0; y < resolutionY; y++) {
 			plot_pixel(x, y, BLACK);
 		}
 	}
