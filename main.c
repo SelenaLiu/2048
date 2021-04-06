@@ -13,7 +13,7 @@
 #define TIMER_BASE            0xFF202000
 #define PIXEL_BUF_CTRL_BASE   0xFF203020
 #define CHAR_BUF_CTRL_BASE    0xFF203030
-
+	
 /* VGA colors */
 #define WHITE 0xFFFF
 #define GREY 0xC618
@@ -43,7 +43,13 @@ int grid[4][4] = {{0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0}};
 
-// subroutines
+// interrupt handler setup functions
+void set_A9_IRQ_stack (void);
+void config_GIC (void);
+void enable_A9_interrupts (void);
+
+
+// function prototypes
 void swap(int *x, int *y);
 void wait_for_vsync();
 void draw_line(int x0, int y0, int x1, int y1, short int colour);
@@ -52,6 +58,7 @@ void plot_pixel(int x, int y, short int line_color);
 void draw_grid();
 void draw_box(int minX, int maxX, int minY, int maxY, short int colour);
 void black_screen();
+void move_tiles(char input);
 void draw_tile(int x, int y, int num);
 void draw_all_tiles();
 
@@ -68,21 +75,32 @@ void draw_all_tiles();
 
 int main(void)
 {
+	/* interrupt setup start */
+	set_A9_IRQ_stack(); // initialize the stack pointer for IRQ mode
+	config_GIC(); // configure the general interrupt controller
+	
+	enable_A9_interrupts(); // enable interrupts in the A9 processor
+	/* example code
+	while (1) {
+		*(LEDR_ptr) = *(slider_switch_ptr); // light up the red lights
+		if (tick) {
+			tick = 0;
+			*HPS_GPIO1_ptr = HPS_timer_LEDG; // turn on/off the green light LEDG
+			HPS_timer_LEDG ∧= 0x01000000; // toggle the bit that controls LEDG
+		}
+	} */
+	/* interrupt setup end */
+	
     volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
-    // declare other variables(not shown)
-    // initialize location and direction of rectangles(not shown)
 
     /* set front pixel buffer to start of FPGA On-chip memory */
     *(pixel_ctrl_ptr + 1) = 0xC8000000; // first store the address in the 
                                         // back buffer
     /* now, swap the front/back buffers, to set the front buffer location */
     wait_for_vsync();
-    /* initialize a pointer to the pixel buffer, used by drawing functions */
-    pixel_buffer_start = *pixel_ctrl_ptr;
+    pixel_buffer_start = *pixel_ctrl_ptr; // initialize a pointer to the pixel buffer, used by drawing functions
 	black_screen();
-    //black_screen(); // pixel_buffer_start points to the pixel buffer
-    /* set back pixel buffer to start of SDRAM memory */
-    *(pixel_ctrl_ptr + 1) = 0xC0000000;
+    *(pixel_ctrl_ptr + 1) = 0xC0000000; // set back pixel buffer to start of SDRAM memory
     pixel_buffer_start = *(pixel_ctrl_ptr + 1); // we draw on the back buffer
 	
 	black_screen();
@@ -863,3 +881,71 @@ void plot_pixel(int x, int y, short int line_color)
 {
     *(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) = line_color;
 }
+
+
+/* interrupt setup handler functions */
+/* Initialize the banked stack pointer register for IRQ mode */
+void set_A9_IRQ_stack(void) {
+    int stack, mode;
+    stack = 0xFFFFFFFF - 7; // top of A9 on-chip memory, aligned to 8 bytes
+    /* change processor to IRQ mode with interrupts disabled */
+    mode = 0b11010010;
+    asm("msr cpsr, %[ps]" : : [ps] "r"(mode));
+    /* set banked stack pointer */
+    asm("mov sp, %[ps]" : : [ps] "r"(stack));
+    /* go back to SVC mode before executing subroutine return! */
+    mode = 0b11010011;
+    asm("msr cpsr, %[ps]" : : [ps] "r"(mode));
+}
+
+/* Turn on interrupts in the ARM processor */
+void enable_A9_interrupts(void) {
+	int status = 0b01010011;
+	asm("msr cpsr, %[ps]" : : [ps]"r"(status));
+}
+/* Configure the Generic Interrupt Controller (GIC) */
+void config_GIC(void) {
+	/* configure the HPS timer interrupt */
+	*((int *) 0xFFFED8C4) = 0x01000000;
+	*((int *) 0xFFFED118) = 0x00000080;
+	/* configure the FPGA interval timer and KEYs interrupts */
+	*((int *) 0xFFFED848) = 0x00000101;
+	*((int *) 0xFFFED108) = 0x00000300;
+	// Set Interrupt Priority Mask Register (ICCPMR). Enable interrupts of all priorities
+	*((int *) 0xFFFEC104) = 0xFFFF;
+	// Set CPU Interface Control Register (ICCICR). Enable signaling of interrupts
+	*((int *) 0xFFFEC100) = 1; // enable = 1
+	// Configure the Distributor Control Register (ICDDCR) to send pending interrupts to CPUs
+	*((int *) 0xFFFED000) = 1; // enable = 1
+}
+
+/* Define the IRQ exception handler */
+void __attribute__ ((interrupt)) __cs3_isr_irq (void) {
+	// Read the ICCIAR from the processor interface
+	int int_ID = *((int *) 0xFFFEC10C);
+	if (int_ID == 79) { // check if interrupt is from the keyboard
+		//keyboard_ISR();
+	} else {
+		while (1){} // if unexpected, then stay here
+	}
+	// Write to the End of Interrupt Register (ICCEOIR)
+	*((int *) 0xFFFEC110) = int_ID;
+	return;
+}
+// Define the remaining exception handlers */
+void __attribute__ ((interrupt)) __cs3_isr_undef (void) {
+	while (1);
+}
+void __attribute__ ((interrupt)) __cs3_isr_swi (void) {
+	while (1);
+}
+void __attribute__ ((interrupt)) __cs3_isr_pabort (void) {
+	while (1);
+}
+void __attribute__ ((interrupt)) __cs3_isr_dabort (void) {
+	while (1);
+}
+void __attribute__ ((interrupt)) __cs3_isr_fiq (void) {
+	while (1);
+}
+
