@@ -47,7 +47,9 @@ int grid[4][4] = {{0, 0, 0, 0},
 void set_A9_IRQ_stack (void);
 void config_GIC (void);
 void enable_A9_interrupts (void);
-
+void config_keyboard();
+void keyboard_ISR();
+void config_interrupt(int N, int CPU_target);
 
 // function prototypes
 void swap(int *x, int *y);
@@ -78,17 +80,10 @@ int main(void)
 	/* interrupt setup start */
 	set_A9_IRQ_stack(); // initialize the stack pointer for IRQ mode
 	config_GIC(); // configure the general interrupt controller
+	config_keyboard(); // configure keyboard interrupt
 	
 	enable_A9_interrupts(); // enable interrupts in the A9 processor
-	/* example code
-	while (1) {
-		*(LEDR_ptr) = *(slider_switch_ptr); // light up the red lights
-		if (tick) {
-			tick = 0;
-			*HPS_GPIO1_ptr = HPS_timer_LEDG; // turn on/off the green light LEDG
-			HPS_timer_LEDG ∧= 0x01000000; // toggle the bit that controls LEDG
-		}
-	} */
+
 	/* interrupt setup end */
 	
     volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
@@ -115,7 +110,7 @@ int main(void)
         /* Erase any boxes and lines that were drawn in the last iteration */
 		draw_grid();
 		draw_all_tiles();
-		move_tiles(moves[rand()%4]);
+		//move_tiles(moves[rand()%4]);
 		
 		wait_for_vsync();
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
@@ -741,7 +736,8 @@ void move_tiles(char input){
 				}	
 			}
 		}
-	}		
+	}
+	return;
 }
 
 //draws all the tiles on the current screen
@@ -884,6 +880,7 @@ void plot_pixel(int x, int y, short int line_color)
 
 
 /* interrupt setup handler functions */
+
 /* Initialize the banked stack pointer register for IRQ mode */
 void set_A9_IRQ_stack(void) {
     int stack, mode;
@@ -905,12 +902,7 @@ void enable_A9_interrupts(void) {
 }
 /* Configure the Generic Interrupt Controller (GIC) */
 void config_GIC(void) {
-	/* configure the HPS timer interrupt */
-	*((int *) 0xFFFED8C4) = 0x01000000;
-	*((int *) 0xFFFED118) = 0x00000080;
-	/* configure the FPGA interval timer and KEYs interrupts */
-	*((int *) 0xFFFED848) = 0x00000101;
-	*((int *) 0xFFFED108) = 0x00000300;
+	config_interrupt (79, 1); // configure the FPGA KEYs interrupt (73)
 	// Set Interrupt Priority Mask Register (ICCPMR). Enable interrupts of all priorities
 	*((int *) 0xFFFEC104) = 0xFFFF;
 	// Set CPU Interface Control Register (ICCICR). Enable signaling of interrupts
@@ -919,12 +911,76 @@ void config_GIC(void) {
 	*((int *) 0xFFFED000) = 1; // enable = 1
 }
 
+/*
+* Configure Set Enable Registers (ICDISERn) and Interrupt Processor Target
+* Registers (ICDIPTRn). The default (reset) values are used for other registers
+* in the GIC.
+*/
+void config_interrupt(int N, int CPU_target) {
+	int reg_offset, index, value, address;
+	/* Configure the Interrupt Set-Enable Registers (ICDISERn).
+	* reg_offset = (integer_div(N / 32) * 4
+	* value = 1 << (N mod 32) */
+	reg_offset = (N >> 3) & 0xFFFFFFFC;
+	index = N & 0x1F;
+	value = 0x1 << index;
+	address = 0xFFFED100 + reg_offset;
+	/* Now that we know the register address and value, set the appropriate bit */
+	*(int *)address |= value;
+
+	/* Configure the Interrupt Processor Targets Register (ICDIPTRn)
+	* reg_offset = integer_div(N / 4) * 4
+	* index = N mod 4 */
+	reg_offset = (N & 0xFFFFFFFC);
+	index = N & 0x3;
+	address = 0xFFFED800 + reg_offset + index;
+	/* Now that we know the register address and value, write to (only) the
+	* appropriate byte */
+	*(char *)address = (char)CPU_target;
+}
+
+// enable keyboard interrupts
+void config_keyboard() {
+	volatile int * PS2_ptr = (int *) 0xFF200100;
+	*(PS2_ptr + 1) = 0x00000001; // RE = 1
+}
+
+// handle a keyboard interrupt
+void keyboard_ISR() {
+	volatile int * PS2_ptr = (int *) 0xFF200100;  // points to interrupt base register
+	int PS2_data, RVALID;
+	unsigned char keyBit;
+	
+	PS2_data = *(PS2_ptr); // read the Data register in the PS/2 port
+	RVALID = PS2_data & 0x8000; // extract the RVALID field (16th bit)
+	
+	// disable the interrupt
+	int RE_bit = *(PS2_ptr + 1); 
+	*(PS2_ptr+1) = RE_bit; 
+	
+	// if there is data to be read
+	if (RVALID) {
+		keyBit = (PS2_data & 0xFF); // read lower 8 bits of data from keyboard reg
+		
+		if (keyBit == 0x75) { // up arrow
+			move_tiles('U');
+		} else if (keyBit == 0x72) { // down arrow
+			move_tiles('D');
+		} else if (keyBit == 0x6B) { // left arrow
+			move_tiles('L');
+		} else if (keyBit == 0x74) { // right arrow
+			move_tiles('R');
+		}
+	}
+	return;
+}
+
 /* Define the IRQ exception handler */
 void __attribute__ ((interrupt)) __cs3_isr_irq (void) {
 	// Read the ICCIAR from the processor interface
-	int int_ID = *((int *) 0xFFFEC10C);
+	int int_ID = *((int *) 0xFFFEC10C); 
 	if (int_ID == 79) { // check if interrupt is from the keyboard
-		//keyboard_ISR();
+		keyboard_ISR();
 	} else {
 		while (1){} // if unexpected, then stay here
 	}
