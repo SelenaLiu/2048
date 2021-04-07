@@ -740,6 +740,21 @@ void move_tiles(char input){
 					pos++;
 				}
 			}
+			int prev = 0;
+			for(int row = 0; row < 3; row++){
+				if(grid[row][col] == 0){
+					break;
+				}
+				if(grid[row][col] == grid[row+1][col]){
+					grid[row][col] *= 2;
+					grid[row+1][col] = 0;
+					for(int y = row + 1; y < 3; y++){
+						grid[y][col] = grid[y+1][col];
+						grid[y+1][col] = 0;
+					}
+				}
+			}
+						
 		}	
 	}
 	else if(input == 'D'){
