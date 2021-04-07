@@ -108,10 +108,14 @@ int main(void)
 	int xPos = rand()%4;
 	int yPos = rand()%4;
 	grid[yPos][xPos] = 2;
-	*/
+	
 	grid[1][2] = 2;
 	grid[1][1] = 4;
 	grid[2][1] = 8;
+	*/
+	spawn_tile();
+	spawn_tile();
+	spawn_tile();
     while (1)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
@@ -720,6 +724,75 @@ const uint16_t image2048[50][50] = {
 };
 
 //shifts all tiles on the grid depending on which direction
+
+void move_tiles(char input){
+	if(input == 'U'){
+		for(int col = 0; col < 4; col++){
+			int pos = 0;
+			for(int row = 0; row < 4; row++){
+				if(grid[row][col] != 0){
+					if(row == pos){
+						pos++;
+						continue;
+					}
+					grid[pos][col] = grid[row][col];
+					grid[row][col] = 0;
+					pos++;
+				}
+			}
+		}	
+	}
+	else if(input == 'D'){
+		for(int col = 0; col < 4; col++){
+			int pos = 3;
+			for(int row = 3; row >= 0; row--){
+				if(grid[row][col] != 0){
+					if(row == pos){
+						pos--;
+						continue;
+					}
+					grid[pos][col] = grid[row][col];
+					grid[row][col] = 0;
+					pos--;
+				}
+			}
+		}	
+	}
+	else if(input == 'L'){
+		for(int row = 0; row < 4; row++){
+			int pos = 0;
+			for(int col = 0; col < 4; col++){
+				if(grid[row][col] != 0){
+					if(col == pos){
+						pos++;
+						continue;
+					}
+					grid[row][pos] = grid[row][col];
+					grid[row][col] = 0;
+					pos++;
+				}
+			}
+		}	
+	}
+	else if(input == 'R'){
+		for(int row = 0; row < 4; row++){
+			int pos = 3;
+			for(int col = 3; col >= 0; col--){
+				if(grid[row][col] != 0){
+					if(col == pos){
+						pos--;
+						continue;
+					}
+					grid[row][pos] = grid[row][col];
+					grid[row][col] = 0;
+					pos--;
+				}
+			}
+		}	
+	}
+	
+}
+/*
 void move_tiles(char input){
 	for(int row = 0; row < 4; row++){
 		for(int col = 0; col < 4; col++){
@@ -769,7 +842,7 @@ void move_tiles(char input){
 		}
 	}
 	return;
-}
+}*/
 
 //draws all the tiles on the current screen
 void draw_all_tiles(){
@@ -847,12 +920,6 @@ void draw_tile(int x, int y, int num){
 			}
 			break;
 	}
-	/*
-	for(int x = 0; x < boxSideLength; x++){
-		for(int y = 0; y < boxSideLength; y++){
-			plot_pixel(xStart + x, yStart + y, image4[y][x]);
-		}
-	}*/
 }
 
 // draws the grid of the game
@@ -893,7 +960,7 @@ void spawn_tile() {
 	int randY = rand() % 4;
 	
 	// continue generating random numbers until one is available
-	while (grid[randX][randY] != 0) {
+	while (grid[randY][randX] != 0) {
 		randX = rand() % 4;
 		randY = rand() % 4;
 	}
@@ -902,7 +969,7 @@ void spawn_tile() {
 	int randVal = ((rand() % 1) + 1) * 2;
 	
 	// set the value on the grid and draw tile
-	grid[randX][randY] = randVal;
+	grid[randY][randX] = randVal;
 	draw_tile(randX, randY, randVal);
 }
 
