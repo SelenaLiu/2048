@@ -35,6 +35,7 @@ int resolutionX, resolutionY, n, midScreenX, midScreenY, gridMinX, gridMaxX, gri
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 
 volatile int pixel_buffer_start; // global variable
 int grid[4][4] = {{0, 0, 0, 0},
@@ -62,10 +63,8 @@ void black_screen();
 void move_tiles(char input);
 void draw_tile(int x, int y, int num);
 void draw_all_tiles();
-
-//variables
-
-
+void spawn_tile();
+void clear_grid();
 
 int main(void)
 {
@@ -99,16 +98,20 @@ int main(void)
     wait_for_vsync();
     pixel_buffer_start = *pixel_ctrl_ptr; // initialize a pointer to the pixel buffer, used by drawing functions
 	black_screen();
+	clear_grid();
     *(pixel_ctrl_ptr + 1) = 0xC0000000; // set back pixel buffer to start of SDRAM memory
     pixel_buffer_start = *(pixel_ctrl_ptr + 1); // we draw on the back buffer
 	
 	black_screen();
 	
+	/*
 	int xPos = rand()%4;
 	int yPos = rand()%4;
 	grid[yPos][xPos] = 2;
-	char moves[4] = {'U', 'D', 'L', 'R'};
-
+	*/
+	grid[1][2] = 2;
+	grid[1][1] = 4;
+	grid[2][1] = 8;
     while (1)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
@@ -723,20 +726,44 @@ void move_tiles(char input){
 			//Found tile
 			if(grid[row][col] != 0){
 				if(input == 'U' && row != 0){
-					grid[0][col] = grid[row][col];
-					grid[row][col] = 0;
+					int fromTop = 0;
+					for (int r = row - 1; r >= 0; r--) {
+						if (grid[r][col] != 0) {
+							fromTop++;
+						}
+					}
+					grid[fromTop][col] = grid[row][col];
+					if (fromTop != row) { grid[row][col] = 0; }
 				}
 				else if(input == 'D' && row != 3){
-					grid[3][col] = grid[row][col];
-					grid[row][col] = 0;
+					int fromBottom = 3;
+					for (int r = row + 1; r <= 3; r++) {
+						if (grid[r][col] != 0) {
+							fromBottom--;
+						}
+					}
+					grid[fromBottom][col] = grid[row][col];
+					if (fromBottom != row) { grid[row][col] = 0; }
 				}
 				else if(input == 'L' && col != 0){
-					grid[row][0] = grid[row][col];
-					grid[row][col] = 0;
+					int fromLeft = 0;
+					for (int c = col - 1; c >= 0; c--) {
+						if (grid[row][c] != 0) {
+							fromLeft++;
+						}
+					}
+					grid[row][fromLeft] = grid[row][col];
+					if (fromLeft != col) { grid[row][col] = 0; }
 				}
 				else if(input == 'R' && col != 3){
-					grid[row][3] = grid[row][col];
-					grid[row][col] = 0;
+					int fromRight = 3;
+					for (int c = col + 1; c <= 3; c++) {
+						if (grid[row][c] != 0) {
+							fromRight--;
+						}
+					}
+					grid[row][fromRight] = grid[row][col];
+					if (fromRight != col) { grid[row][col] = 0; }
 				}	
 			}
 		}
@@ -757,36 +784,79 @@ void draw_all_tiles(){
 
 //draws a specific tile at a given location
 void draw_tile(int x, int y, int num){
-	/*
-	int midScreenX = RESOLUTION_X / 2;
-    int midScreenY = RESOLUTION_Y / 2;
-	int gridMinX = midScreenX - midScreenY;
-	int gridMaxX = midScreenX + midScreenY;
-	int gridSideLength = gridMaxX - gridMinX;
-	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;*/
-	
 	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x);
 	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y);
 	
+	//uint16_t number[10][50][50] = {{{**image2, **image4, **image8, **image16, **image32, **image64, **image128, **image256, **image512, **image1024, **image2048}}};
+	
+	switch(num) {
+		case 2: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image2[y][x]);
+				}
+			}
+			break;
+		case 4: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image4[y][x]);
+				}
+			}
+			break;
+		case 8: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image8[y][x]);
+				}
+			}
+			break;
+		case 16: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image16[y][x]);
+				}
+			}
+			break;
+		case 32: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image32[y][x]);
+				}
+			}
+			break;
+		case 64: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image64[y][x]);
+				}
+			}
+			break;
+		case 128: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image128[y][x]);
+				}
+			}
+			break;
+		default: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image2[y][x]);
+				}
+			}
+			break;
+	}
+	/*
 	for(int x = 0; x < boxSideLength; x++){
 		for(int y = 0; y < boxSideLength; y++){
-			plot_pixel(xStart + x, yStart + y, image2[y][x]);
+			plot_pixel(xStart + x, yStart + y, image4[y][x]);
 		}
-	}
-	
+	}*/
 }
 
 // draws the grid of the game
 void draw_grid() {
-	// main constants, should move them to global
-	/*
-	int midScreenX = RESOLUTION_X / 2;
-    int midScreenY = RESOLUTION_Y / 2;
-	int gridMinX = midScreenX - midScreenY;
-	int gridMaxX = midScreenX + midScreenY;
-	int gridSideLength = gridMaxX - gridMinX;
-	int boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;*/
-
 	// draw grid background
 	draw_box(gridMinX, gridMaxX, 0, resolutionY, GREY);
 	
@@ -800,11 +870,40 @@ void draw_grid() {
 		}
 	}
 }
+
+void clear_grid() {
+	for (int row = 0; row < 4; row ++) {
+		for (int col = 0; col < 4; col++) {
+			
+			grid[row][col] = 0;  
+		}
+	}
+}
 	
 void draw_box(int minX, int maxX, int minY, int maxY, short int colour) {
 	for (int y = minY; y < maxY; y++) {
 		draw_line(minX, y, maxX - 1, y, colour);
 	}
+}
+
+// spawn a new tile on the grid
+void spawn_tile() {
+	// check a random space on the grid
+	int randX = rand() % 4;
+	int randY = rand() % 4;
+	
+	// continue generating random numbers until one is available
+	while (grid[randX][randY] != 0) {
+		randX = rand() % 4;
+		randY = rand() % 4;
+	}
+	
+	// choose whether 2 or 4
+	int randVal = ((rand() % 1) + 1) * 2;
+	
+	// set the value on the grid and draw tile
+	grid[randX][randY] = randVal;
+	draw_tile(randX, randY, randVal);
 }
 
 // swaps two values
@@ -969,12 +1068,16 @@ void keyboard_ISR() {
 		
 		if (keyBit == 0x75) { // up arrow
 			move_tiles('U');
+			//spawn_tile();
 		} else if (keyBit == 0x72) { // down arrow
 			move_tiles('D');
+			//spawn_tile();
 		} else if (keyBit == 0x6B) { // left arrow
 			move_tiles('L');
+			//spawn_tile();
 		} else if (keyBit == 0x74) { // right arrow
 			move_tiles('R');
+			//spawn_tile();
 		}
 	}
 	return;
