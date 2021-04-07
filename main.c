@@ -60,6 +60,7 @@ void plot_pixel(int x, int y, short int line_color);
 void draw_grid();
 void draw_box(int minX, int maxX, int minY, int maxY, short int colour);
 void black_screen();
+void combine_tiles(int position, char input);
 void move_tiles(char input);
 void draw_tile(int x, int y, int num);
 void draw_all_tiles();
@@ -103,16 +104,7 @@ int main(void)
     pixel_buffer_start = *(pixel_ctrl_ptr + 1); // we draw on the back buffer
 	
 	black_screen();
-	
-	/*
-	int xPos = rand()%4;
-	int yPos = rand()%4;
-	grid[yPos][xPos] = 2;
-	
-	grid[1][2] = 2;
-	grid[1][1] = 4;
-	grid[2][1] = 8;
-	*/
+
 	spawn_tile();
 	spawn_tile();
 	spawn_tile();
@@ -121,7 +113,6 @@ int main(void)
         /* Erase any boxes and lines that were drawn in the last iteration */
 		draw_grid();
 		draw_all_tiles();
-		//move_tiles(moves[rand()%4]);
 		
 		wait_for_vsync();
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
@@ -723,8 +714,86 @@ const uint16_t image2048[50][50] = {
 
 };
 
-//shifts all tiles on the grid depending on which direction
+void combine_tiles(int position, char input){
+	if(input == 'U'){
+		//Loop through rows
+		for(int row = 0; row < 3; row++){
+			//If we hit a 0 then stop
+			if(grid[row][position] == 0){
+				break;
+			}
+			//Two adjacent tiles have same value
+			if(grid[row][position] == grid[row+1][position]){
+				grid[row][position] *= 2;
+				grid[row+1][position] = 0;
+				//Shift remaining blocks
+				for(int shiftRow = row + 1; shiftRow < 3; shiftRow++){
+					grid[shiftRow][position] = grid[shiftRow+1][position];
+					grid[shiftRow+1][position] = 0;
+				}
+			}
+		}
+	}
+	else if(input == 'D'){
+		//Loop through rows
+		for(int row = 3; row > 0; row--){
+			//If we hit a 0 then stop
+			if(grid[row][position] == 0){
+				break;
+			}
+			//Two adjacent tiles have same value
+			if(grid[row][position] == grid[row-1][position]){
+				grid[row][position] *= 2;
+				grid[row-1][position] = 0;
+				//Shift remaining blocks
+				for(int shiftRow = row - 1; shiftRow > 0; shiftRow--){
+					grid[shiftRow][position] = grid[shiftRow-1][position];
+					grid[shiftRow-1][position] = 0;
+				}
+			}
+		}
+	}
+	else if(input == 'L'){
+		//Loop through cols
+		for(int col = 0; col < 3; col++){
+			//If we hit a 0 then stop
+			if(grid[position][col] == 0){
+				break;
+			}
+			//Two adjacent tiles have same value
+			if(grid[position][col] == grid[position][col+1]){
+				grid[position][col] *= 2;
+				grid[position][col+1] = 0;
+				//Shift remaining blocks
+				for(int shiftCol = col + 1; shiftCol < 3; shiftCol++){
+					grid[position][shiftCol] = grid[position][shiftCol+1];
+					grid[position][shiftCol+1] = 0;
+				}
+			}
+		}
+	}
+	else if(input == 'R'){
+		//Loop through cols
+		for(int col = 3; col > 0; col--){
+			//If we hit a 0 then stop
+			if(grid[position][col] == 0){
+				break;
+			}
+			//Two adjacent tiles have same value
+			if(grid[position][col] == grid[position][col-1]){
+				grid[position][col] *= 2;
+				grid[position][col-1] = 0;
+				//Shift remaining blocks
+				for(int shiftCol = col - 1; shiftCol > 0; shiftCol--){
+					grid[position][shiftCol] = grid[position][shiftCol-1];
+					grid[position][shiftCol-1] = 0;
+				}
+			}
+		}
+	}
+}
 
+//shifts all tiles on the grid depending on which direction
 void move_tiles(char input){
 	if(input == 'U'){
 		for(int col = 0; col < 4; col++){
@@ -740,21 +809,7 @@ void move_tiles(char input){
 					pos++;
 				}
 			}
-			int prev = 0;
-			for(int row = 0; row < 3; row++){
-				if(grid[row][col] == 0){
-					break;
-				}
-				if(grid[row][col] == grid[row+1][col]){
-					grid[row][col] *= 2;
-					grid[row+1][col] = 0;
-					for(int y = row + 1; y < 3; y++){
-						grid[y][col] = grid[y+1][col];
-						grid[y+1][col] = 0;
-					}
-				}
-			}
-						
+			combine_tiles(col, input);				
 		}	
 	}
 	else if(input == 'D'){
@@ -771,6 +826,7 @@ void move_tiles(char input){
 					pos--;
 				}
 			}
+			combine_tiles(col, input);
 		}	
 	}
 	else if(input == 'L'){
@@ -787,6 +843,7 @@ void move_tiles(char input){
 					pos++;
 				}
 			}
+			combine_tiles(row, input);
 		}	
 	}
 	else if(input == 'R'){
@@ -803,6 +860,7 @@ void move_tiles(char input){
 					pos--;
 				}
 			}
+			combine_tiles(row, input);
 		}	
 	}
 	
