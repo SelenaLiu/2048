@@ -60,8 +60,8 @@ void plot_pixel(int x, int y, short int line_color);
 void draw_grid();
 void draw_box(int minX, int maxX, int minY, int maxY, short int colour);
 void black_screen();
-void combine_tiles(int position, char input);
-void move_tiles(char input);
+bool combine_tiles(int position, char input);
+bool move_tiles(char input);
 void draw_tile(int x, int y, int num);
 void draw_all_tiles();
 void spawn_tile();
@@ -714,7 +714,8 @@ const uint16_t image2048[50][50] = {
 
 };
 
-void combine_tiles(int position, char input){
+bool combine_tiles(int position, char input){
+	bool changed = false;
 	if(input == 'U'){
 		//Loop through rows
 		for(int row = 0; row < 3; row++){
@@ -726,6 +727,7 @@ void combine_tiles(int position, char input){
 			if(grid[row][position] == grid[row+1][position]){
 				grid[row][position] *= 2;
 				grid[row+1][position] = 0;
+				changed = true;
 				//Shift remaining blocks
 				for(int shiftRow = row + 1; shiftRow < 3; shiftRow++){
 					grid[shiftRow][position] = grid[shiftRow+1][position];
@@ -745,6 +747,7 @@ void combine_tiles(int position, char input){
 			if(grid[row][position] == grid[row-1][position]){
 				grid[row][position] *= 2;
 				grid[row-1][position] = 0;
+				changed = true;
 				//Shift remaining blocks
 				for(int shiftRow = row - 1; shiftRow > 0; shiftRow--){
 					grid[shiftRow][position] = grid[shiftRow-1][position];
@@ -764,6 +767,7 @@ void combine_tiles(int position, char input){
 			if(grid[position][col] == grid[position][col+1]){
 				grid[position][col] *= 2;
 				grid[position][col+1] = 0;
+				changed = true;
 				//Shift remaining blocks
 				for(int shiftCol = col + 1; shiftCol < 3; shiftCol++){
 					grid[position][shiftCol] = grid[position][shiftCol+1];
@@ -783,6 +787,7 @@ void combine_tiles(int position, char input){
 			if(grid[position][col] == grid[position][col-1]){
 				grid[position][col] *= 2;
 				grid[position][col-1] = 0;
+				changed = true;
 				//Shift remaining blocks
 				for(int shiftCol = col - 1; shiftCol > 0; shiftCol--){
 					grid[position][shiftCol] = grid[position][shiftCol-1];
@@ -791,10 +796,12 @@ void combine_tiles(int position, char input){
 			}
 		}
 	}
+	return changed;
 }
 
 //shifts all tiles on the grid depending on which direction
-void move_tiles(char input){
+bool move_tiles(char input){
+	bool moved = false;
 	if(input == 'U'){
 		for(int col = 0; col < 4; col++){
 			int pos = 0;
@@ -806,10 +813,11 @@ void move_tiles(char input){
 					}
 					grid[pos][col] = grid[row][col];
 					grid[row][col] = 0;
+					moved = true;
 					pos++;
 				}
 			}
-			combine_tiles(col, input);				
+			if(combine_tiles(col, input)){moved = true;};				
 		}	
 	}
 	else if(input == 'D'){
@@ -823,10 +831,11 @@ void move_tiles(char input){
 					}
 					grid[pos][col] = grid[row][col];
 					grid[row][col] = 0;
+					moved = true;
 					pos--;
 				}
 			}
-			combine_tiles(col, input);
+			if(combine_tiles(col, input)){moved = true;};
 		}	
 	}
 	else if(input == 'L'){
@@ -840,10 +849,11 @@ void move_tiles(char input){
 					}
 					grid[row][pos] = grid[row][col];
 					grid[row][col] = 0;
+					moved = true;
 					pos++;
 				}
 			}
-			combine_tiles(row, input);
+			if(combine_tiles(row, input)){moved = true;};
 		}	
 	}
 	else if(input == 'R'){
@@ -857,12 +867,14 @@ void move_tiles(char input){
 					}
 					grid[row][pos] = grid[row][col];
 					grid[row][col] = 0;
+					moved = true;
 					pos--;
 				}
 			}
-			combine_tiles(row, input);
+			if(combine_tiles(row, input)){moved = true;};
 		}	
 	}
+	return moved;
 	
 }
 
@@ -1164,17 +1176,21 @@ void keyboard_ISR() {
 	
 		if (byte3 == 0xF0) { // up arrow
 			if (keyBit == 0x75) {
-				move_tiles('U');
-				spawn_tile();
+				if(move_tiles('U')){
+					spawn_tile();
+				}
 			} else if (keyBit == 0x72) { 
-				move_tiles('D');
-				spawn_tile();
+				if(move_tiles('D')){
+					spawn_tile();
+				}
 			} else if (keyBit == 0x6B) { 
-				move_tiles('L');
-				spawn_tile();
+				if(move_tiles('L')){
+					spawn_tile();
+				}
 			} else if (keyBit == 0x74) { 
-				move_tiles('R');
-				spawn_tile();
+				if(move_tiles('R')){
+					spawn_tile();
+				}
 			}
 		} 
 	}
