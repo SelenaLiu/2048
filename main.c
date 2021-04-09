@@ -865,57 +865,6 @@ void move_tiles(char input){
 	}
 	
 }
-/*
-void move_tiles(char input){
-	for(int row = 0; row < 4; row++){
-		for(int col = 0; col < 4; col++){
-			//Found tile
-			if(grid[row][col] != 0){
-				if(input == 'U' && row != 0){
-					int fromTop = 0;
-					for (int r = row - 1; r >= 0; r--) {
-						if (grid[r][col] != 0) {
-							fromTop++;
-						}
-					}
-					grid[fromTop][col] = grid[row][col];
-					if (fromTop != row) { grid[row][col] = 0; }
-				}
-				else if(input == 'D' && row != 3){
-					int fromBottom = 3;
-					for (int r = row + 1; r <= 3; r++) {
-						if (grid[r][col] != 0) {
-							fromBottom--;
-						}
-					}
-					grid[fromBottom][col] = grid[row][col];
-					if (fromBottom != row) { grid[row][col] = 0; }
-				}
-				else if(input == 'L' && col != 0){
-					int fromLeft = 0;
-					for (int c = col - 1; c >= 0; c--) {
-						if (grid[row][c] != 0) {
-							fromLeft++;
-						}
-					}
-					grid[row][fromLeft] = grid[row][col];
-					if (fromLeft != col) { grid[row][col] = 0; }
-				}
-				else if(input == 'R' && col != 3){
-					int fromRight = 3;
-					for (int c = col + 1; c <= 3; c++) {
-						if (grid[row][c] != 0) {
-							fromRight--;
-						}
-					}
-					grid[row][fromRight] = grid[row][col];
-					if (fromRight != col) { grid[row][col] = 0; }
-				}	
-			}
-		}
-	}
-	return;
-}*/
 
 //draws all the tiles on the current screen
 void draw_all_tiles(){
@@ -1189,37 +1138,47 @@ void config_keyboard() {
 	*(PS2_ptr + 1) = 0x00000001; // RE = 1
 }
 
+char keyBit = 0;
+
 // handle a keyboard interrupt
 void keyboard_ISR() {
 	volatile int * PS2_ptr = (int *) 0xFF200100;  // points to interrupt base register
 	int PS2_data, RVALID;
-	unsigned char keyBit;
-	
-	PS2_data = *(PS2_ptr); // read the Data register in the PS/2 port
-	RVALID = PS2_data & 0x8000; // extract the RVALID field (16th bit)
 	
 	// disable the interrupt
 	int RE_bit = *(PS2_ptr + 1); 
-	*(PS2_ptr+1) = RE_bit; 
+	*(PS2_ptr+1) = RE_bit;
+	char byte3 = 0; 
 	
 	// if there is data to be read
+	PS2_data = *(PS2_ptr); // read the Data register in the PS/2 port
+	RVALID = PS2_data & 0x8000; // extract the RVALID field (16th bit)
+	//keyBit = (PS2_data & 0xFF);
 	if (RVALID) {
-		keyBit = (PS2_data & 0xFF); // read lower 8 bits of data from keyboard reg
-		
-		if (keyBit == 0x75) { // up arrow
-			move_tiles('U');
-			//spawn_tile();
-		} else if (keyBit == 0x72) { // down arrow
-			move_tiles('D');
-			//spawn_tile();
-		} else if (keyBit == 0x6B) { // left arrow
-			move_tiles('L');
-			//spawn_tile();
-		} else if (keyBit == 0x74) { // right arrow
-			move_tiles('R');
-			//spawn_tile();
-		}
+		/* save the last three bytes of data */
+		byte3 = PS2_data & 0xFF;
+		//keyBit = (PS2_data & 0xFF); // read lower 8 bits of data from keyboard reg
+		if (byte3 == 0x75 || byte3 == 0x72 || byte3 == 0x6B || byte3 == 0x74) {
+			keyBit = byte3;
+		} 
+	
+		if (byte3 == 0xF0) { // up arrow
+			if (keyBit == 0x75) {
+				move_tiles('U');
+				spawn_tile();
+			} else if (keyBit == 0x72) { 
+				move_tiles('D');
+				spawn_tile();
+			} else if (keyBit == 0x6B) { 
+				move_tiles('L');
+				spawn_tile();
+			} else if (keyBit == 0x74) { 
+				move_tiles('R');
+				spawn_tile();
+			}
+		} 
 	}
+	
 	return;
 }
 
