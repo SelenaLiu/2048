@@ -24,6 +24,7 @@
 
 /* Global Variable */
 int resolutionX, resolutionY, n, midScreenX, midScreenY, gridMinX, gridMaxX, gridSideLength, boxSideLength;
+int totalPoints = 0;
 
 /* Constants for animation */
 #define GRID_LINE_WIDTH 8
@@ -65,6 +66,7 @@ bool move_tiles(char input);
 void draw_tile(int x, int y, int num);
 void animate_move(int rStart, int rEnd, int cStart, int cEnd, int num);
 void draw_all_tiles();
+void addToPoints(int points);
 void spawn_tile();
 void clear_grid();
 
@@ -715,6 +717,10 @@ const uint16_t image2048[50][50] = {
 
 };
 
+void addToPoints(int points) {
+	totalPoints += points;
+}
+
 bool combine_tiles(int position, char input){
 	bool changed = false;
 	if(input == 'U'){
@@ -727,6 +733,9 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[row][position] == grid[row+1][position]){
 				grid[row][position] *= 2;
+				//Add new doubled number to points
+				addToPoints(grid[row][position]);
+				
 				grid[row+1][position] = 0;
 				changed = true;
 				//Shift remaining blocks
@@ -747,6 +756,9 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[row][position] == grid[row-1][position]){
 				grid[row][position] *= 2;
+				//Add new doubled number to points
+				addToPoints(grid[row][position]);
+				
 				grid[row-1][position] = 0;
 				changed = true;
 				//Shift remaining blocks
@@ -767,6 +779,9 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[position][col] == grid[position][col+1]){
 				grid[position][col] *= 2;
+				//Add new doubled number to points
+				addToPoints(grid[position][col]);
+				
 				grid[position][col+1] = 0;
 				changed = true;
 				//Shift remaining blocks
@@ -787,6 +802,9 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[position][col] == grid[position][col-1]){
 				grid[position][col] *= 2;
+				//Add new doubled number to points
+				addToPoints(grid[position][col]);
+				
 				grid[position][col-1] = 0;
 				changed = true;
 				//Shift remaining blocks
@@ -971,6 +989,34 @@ void draw_tile(int x, int y, int num){
 			for(int x = 0; x < boxSideLength; x++){
 				for(int y = 0; y < boxSideLength; y++){
 					plot_pixel(xStart + x, yStart + y, image128[y][x]);
+				}
+			}
+			break;
+		case 256: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image256[y][x]);
+				}
+			}
+			break;
+		case 512: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image512[y][x]);
+				}
+			}
+			break;
+		case 1024: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image1024[y][x]);
+				}
+			}
+			break;
+		case 2048: 
+			for(int x = 0; x < boxSideLength; x++){
+				for(int y = 0; y < boxSideLength; y++){
+					plot_pixel(xStart + x, yStart + y, image2048[y][x]);
 				}
 			}
 			break;
