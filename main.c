@@ -63,6 +63,7 @@ void black_screen();
 bool combine_tiles(int position, char input);
 bool move_tiles(char input);
 void draw_tile(int x, int y, int num);
+void animate_move(int rStart, int rEnd, int cStart, int cEnd, int num);
 void draw_all_tiles();
 void spawn_tile();
 void clear_grid();
@@ -811,6 +812,7 @@ bool move_tiles(char input){
 						pos++;
 						continue;
 					}
+					animate_move(row, pos, col, col, grid[row][col]);
 					grid[pos][col] = grid[row][col];
 					grid[row][col] = 0;
 					moved = true;
@@ -876,6 +878,32 @@ bool move_tiles(char input){
 	}
 	return moved;
 	
+}
+
+// animate movement of blocks
+void animate_move(int rStart, int rEnd, int cStart, int cEnd, int num) {
+	int dRow = rEnd - rStart;
+	int dCol = cEnd - cStart;
+	
+	if (dRow < 0) {
+		dRow = -1;
+	} else {
+		dRow = 1;
+	}
+	
+	if (dCol < 0) {
+		dCol = -1;
+	} else {
+		dCol = 1;
+	}
+	
+	if (dRow == 0) { // moving left and right
+		for(int row = rStart; row <= rEnd; row += dRow) {
+			draw_tile(row, cStart, num);
+		}
+	} else if (dCol == 0) { // moving up and down
+		
+	}
 }
 
 //draws all the tiles on the current screen
