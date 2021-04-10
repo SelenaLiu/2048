@@ -43,6 +43,10 @@ int grid[4][4] = {{0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0}};
+int prev_grid[4][4] = {{0, 0, 0, 0},
+				  {0, 0, 0, 0},
+				  {0, 0, 0, 0},
+				  {0, 0, 0, 0}};
 
 // interrupt handler setup functions
 void set_A9_IRQ_stack (void);
@@ -63,12 +67,15 @@ void draw_box(int minX, int maxX, int minY, int maxY, short int colour);
 void black_screen();
 bool combine_tiles(int position, char input);
 bool move_tiles(char input);
-void draw_tile(int x, int y, int num);
+void draw_tile(int x, int y, int num, int sideLength);
 void animate_move(int rStart, int rEnd, int cStart, int cEnd, int num);
 void draw_all_tiles();
 void addToPoints(int points);
 void spawn_tile();
+void erase_tile(int x, int y);
+void erase_all_tiles();
 void clear_grid();
+void spawn_without_animate();
 
 int main(void)
 {
@@ -107,10 +114,10 @@ int main(void)
     pixel_buffer_start = *(pixel_ctrl_ptr + 1); // we draw on the back buffer
 	
 	black_screen();
-
-	spawn_tile();
-	spawn_tile();
-	spawn_tile();
+	
+	// spawn 2 tiles
+	spawn_without_animate();
+	spawn_without_animate();
     while (1)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
@@ -832,6 +839,7 @@ bool move_tiles(char input){
 					}
 					animate_move(row, pos, col, col, grid[row][col]);
 					grid[pos][col] = grid[row][col];
+					prev_grid[row][col] = grid[row][col];
 					grid[row][col] = 0;
 					moved = true;
 					pos++;
@@ -850,6 +858,7 @@ bool move_tiles(char input){
 						continue;
 					}
 					grid[pos][col] = grid[row][col];
+					prev_grid[row][col] = grid[row][col];
 					grid[row][col] = 0;
 					moved = true;
 					pos--;
@@ -868,6 +877,7 @@ bool move_tiles(char input){
 						continue;
 					}
 					grid[row][pos] = grid[row][col];
+					prev_grid[row][col] = grid[row][col];
 					grid[row][col] = 0;
 					moved = true;
 					pos++;
@@ -886,6 +896,7 @@ bool move_tiles(char input){
 						continue;
 					}
 					grid[row][pos] = grid[row][col];
+					prev_grid[row][col] = grid[row][col];
 					grid[row][col] = 0;
 					moved = true;
 					pos--;
@@ -894,6 +905,7 @@ bool move_tiles(char input){
 			if(combine_tiles(row, input)){moved = true;};
 		}	
 	}
+	erase_all_tiles();
 	return moved;
 	
 }
@@ -915,9 +927,13 @@ void animate_move(int rStart, int rEnd, int cStart, int cEnd, int num) {
 		dCol = 1;
 	}
 	
+	volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
+	
 	if (dRow == 0) { // moving left and right
-		for(int row = rStart; row <= rEnd; row += dRow) {
-			draw_tile(row, cStart, num);
+		for(int col = cStart; col <= cEnd; col += dCol) {
+			draw_tile(rStart, col, num, boxSideLength);
+			wait_for_vsync();
+        	pixel_buffer_start = *(pixel_ctrl_ptr + 1);
 		}
 	} else if (dCol == 0) { // moving up and down
 		
@@ -929,30 +945,30 @@ void draw_all_tiles(){
 	for(int row = 0; row < 4; row++){
 		for(int col = 0; col < 4; col++){
 			if(grid[row][col] != 0){
-				draw_tile(col, row, grid[row][col]);
+				draw_tile(col, row, grid[row][col], boxSideLength);
 			}
 		}
 	}
 }
 
 //draws a specific tile at a given location
-void draw_tile(int x, int y, int num){
-	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x);
-	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y);
+void draw_tile(int x, int y, int num, int sideLength){
+	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x) + ((boxSideLength / 2) - (sideLength / 2));
+	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y) + ((boxSideLength / 2) - (sideLength / 2));
 	
 	//uint16_t number[10][50][50] = {{{**image2, **image4, **image8, **image16, **image32, **image64, **image128, **image256, **image512, **image1024, **image2048}}};
 	
 	switch(num) {
 		case 2: 
-			for(int x = 0; x < boxSideLength; x++){
-				for(int y = 0; y < boxSideLength; y++){
+			for(int x = 0; x < sideLength; x++){
+				for(int y = 0; y < sideLength; y++){
 					plot_pixel(xStart + x, yStart + y, image2[y][x]);
 				}
 			}
 			break;
 		case 4: 
-			for(int x = 0; x < boxSideLength; x++){
-				for(int y = 0; y < boxSideLength; y++){
+			for(int x = 0; x < sideLength; x++){
+				for(int y = 0; y < sideLength; y++){
 					plot_pixel(xStart + x, yStart + y, image4[y][x]);
 				}
 			}
@@ -1061,6 +1077,24 @@ void draw_box(int minX, int maxX, int minY, int maxY, short int colour) {
 	}
 }
 
+//erase tile at given location
+void erase_tile(int x, int y){
+	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x);
+	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y);
+	
+	draw_box(xStart, xStart + boxSideLength, yStart, yStart + boxSideLength, WHITE);
+}
+
+void erase_all_tiles() {
+	for(int x = 0; x < 4; x++) {
+		for(int y = 0; y < 4; y++) {
+			if (prev_grid[x][y] != 0) {
+				erase_tile(x, y);
+			}
+		}
+	}
+}
+
 // spawn a new tile on the grid
 void spawn_tile() {
 	// check a random space on the grid
@@ -1076,9 +1110,42 @@ void spawn_tile() {
 	// choose whether 2 or 4
 	int randVal = ((rand() % 1) + 1) * 2;
 	
+	//draw_tile(randX, randY, randVal);
+	volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
+	draw_grid();
+	// spawn tile animation
+	for(int width = 5; width <= boxSideLength; width += 5) {
+		erase_all_tiles();
+		draw_all_tiles();
+		draw_tile(randX, randY, randVal, width);
+		//switch pixelBuffer
+		wait_for_vsync();
+        pixel_buffer_start = *(pixel_ctrl_ptr + 1);
+	}
+	
+	// set the value on the grid and draw tile
+	prev_grid[randY][randX] = randVal;
+	grid[randY][randX] = randVal;
+}
+
+// spawn a new tile on the grid
+void spawn_without_animate() {
+	// check a random space on the grid
+	int randX = rand() % 4;
+	int randY = rand() % 4;
+	
+	// continue generating random numbers until one is available
+	while (grid[randY][randX] != 0) {
+		randX = rand() % 4;
+		randY = rand() % 4;
+	}
+	
+	// choose whether 2 or 4
+	int randVal = ((rand() % 1) + 1) * 2;
+	
 	// set the value on the grid and draw tile
 	grid[randY][randX] = randVal;
-	draw_tile(randX, randY, randVal);
+	draw_tile(randX, randY, randVal, boxSideLength);
 }
 
 // swaps two values
