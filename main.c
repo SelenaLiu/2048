@@ -1489,7 +1489,12 @@ int main(void)
 			
 			// reset values and clear grid
 			gameWon = false;
+			draw_grid();
 			clear_grid();
+			wait_for_vsync();
+			pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+			draw_grid();
+			totalPoints = 0;
 			
 			// spawn 2 tiles
 			spawn_without_animate();
@@ -1507,7 +1512,12 @@ int main(void)
 			
 			// reset values and clear grid
 			gameLost = false;
+			draw_grid();
 			clear_grid();
+			wait_for_vsync();
+			pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+			draw_grid();
+			totalPoints = 0;
 			
 			// spawn 2 tiles
 			spawn_without_animate();
