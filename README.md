@@ -12,5 +12,13 @@ Start Screen             |  After pressing right arrow key
 
 After every move, a new tile will be spawned in on an empty grid location. The goal of the game is to create the 2048 tile. You lose when you can no longer combine any more tiles and when there are no more spaces to spawn a new tile.
 
+Lose Scenario             |  Lose Screen
+:-------------------------:|:-------------------------:
+![](https://github.com/SelenaLiu/2048/blob/main/screenshots/LoseCase.jpg) | ![](https://github.com/SelenaLiu/2048/blob/main/screenshots/LoseScreen.jpg)
+
+Win Scenario             |  Win Screen after combining 1024 tiles
+:-------------------------:|:-------------------------:
+![](https://github.com/SelenaLiu/2048/blob/main/screenshots/WinCase.jpg) | ![](https://github.com/SelenaLiu/2048/blob/main/screenshots/WinScreen.jpg)
+
 ## Usage
 This C program can be run on an ARMv7 FPGA board. The screenshots and demos are shown via CPUlator, a program that mimics the functionality of an FPGA.
