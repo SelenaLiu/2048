@@ -6,8 +6,8 @@
 
 /* Cyclone V FPGA devices */
 #define LEDR_BASE             0xFF200000
-#define HEX3_HEX0_BASE        0xFF200020
-#define HEX5_HEX4_BASE        0xFF200030
+#define HEX3_HEX0_BASE       (volatile long *) 0xFF200020
+#define HEX5_HEX4_BASE       (volatile long *) 0xFF200030
 #define SW_BASE               0xFF200040
 #define KEY_BASE              0xFF200050
 #define TIMER_BASE            0xFF202000
@@ -51,6 +51,8 @@ int prev_grid[4][4] = {{0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0}};
+				  
+const int hexdisplay[10] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x67};
 
 // interrupt handler setup functions
 void set_A9_IRQ_stack (void);
@@ -80,6 +82,7 @@ void erase_tile(int x, int y);
 void erase_all_tiles();
 void clear_grid();
 void spawn_without_animate();
+void displayScore();
 
 int main(void)
 {
@@ -131,6 +134,7 @@ int main(void)
         /* Erase any boxes and lines that were drawn in the last iteration */
 		draw_grid();
 		draw_all_tiles();
+		displayScore();
 		
 		wait_for_vsync();
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
@@ -741,20 +745,31 @@ const uint16_t image2048[50][50] = {
 
 };
 
-/*
+
 void displayScore(){
-	while(totalPoints > 0){
-		int digit = totalPoints
+	int displayNumHEX3_0 = 0;
+	int displayNumHEX5_4 = 0;
+	int digits = 0;
+	int currentPoints = totalPoints;
+	
+	while(currentPoints > 0){
+		int digit = currentPoints % 10;
+		currentPoints /= 10;
+		
+		//shift and combine
+		if(digits < 4){
+			displayNumHEX3_0 = (hexdisplay[digit] << 8*digits) | displayNumHEX3_0;
+		}
+		else{
+			displayNumHEX5_4 = (hexdisplay[digit] << 8*(digits - 4)) | displayNumHEX5_4;
+		}
+		digits++;
+		
 	}
-	
-	int thousands = totalPoints/
-	int hundreds
-	int tens = game.currentScore/10;
-	int ones = game.currentScore%10;
-	
-	int displayNum = (hexdisplay[tens] << 8 ) | hexdisplay[ones];
-	*(HEX3_0) = displayNum;
-}*/
+
+	*(HEX3_HEX0_BASE) = displayNumHEX3_0;
+	*(HEX5_HEX4_BASE) = displayNumHEX5_4;
+}
 
 void addToPoints(int points) {
 	totalPoints += points;
@@ -1378,19 +1393,23 @@ void keyboard_ISR() {
 		if (byte3 == 0xF0) { // up arrow
 			if (keyBit == 0x75) {
 				if(move_tiles('U')){
-					spawn_tile();
+					//spawn_tile();
+					spawn_without_animate();
 				}
 			} else if (keyBit == 0x72) { 
 				if(move_tiles('D')){
-					spawn_tile();
+					//spawn_tile();
+					spawn_without_animate();
 				}
 			} else if (keyBit == 0x6B) { 
 				if(move_tiles('L')){
-					spawn_tile();
+					//spawn_tile();
+					spawn_without_animate();
 				}
 			} else if (keyBit == 0x74) { 
 				if(move_tiles('R')){
-					spawn_tile();
+					//spawn_tile();
+					spawn_without_animate();
 				}
 			}
 		} 
