@@ -2037,7 +2037,7 @@ void spawn_tile() {
 	}
 	
 	// choose whether 2 or 4
-	int randVal = ((rand() % 1) + 1) * 2;
+	int randVal = (rand() % 10) == 0 ? 4 : 2;
 	
 	volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
 
