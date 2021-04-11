@@ -867,8 +867,7 @@ const uint16_t image2048[50][50] = {
 int resolutionX, resolutionY, n, midScreenX, midScreenY, gridMinX, gridMaxX, gridSideLength, boxSideLength;
 int totalPoints = 0;
 bool gameStart = false;
-bool gameContinue = true;
-bool gameWon;
+bool gameContinue = true, gameWon = false, gameLost = false;
 
 /* Constants for animation */
 #define GRID_LINE_WIDTH 8
@@ -884,6 +883,7 @@ int grid[4][4] = {{0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0}};
+				  
 int prev_grid[4][4] = {{0, 0, 0, 0},
 				  {0, 0, 0, 0},
 				  {0, 0, 0, 0},
@@ -921,6 +921,8 @@ void clear_grid();
 void draw_home_screen();
 void spawn_without_animate();
 void displayScore();
+bool checkGridFull();
+bool checkValidMoves();
 
 int main(void)
 {
@@ -983,6 +985,12 @@ int main(void)
 		draw_all_tiles();
 		displayScore();
 		
+		if(checkGridFull()){
+			if(!checkValidMoves()){
+				gameLost = true;
+			}
+		}
+		
 		wait_for_vsync();
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
 		
@@ -997,6 +1005,47 @@ int main(void)
 		;
 	}
 }
+
+//Checks if there are any valid moves to be made
+bool checkValidMoves(){
+	int gridSave[4][4];
+	//save the grid
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			gridSave[row][col] = grid[row][col];
+		}
+	}
+	
+	//no valid moves
+	if(!move_tiles('U') && !move_tiles('D') && !move_tiles('L') && !move_tiles('R')){	//no valid moves
+		return false;
+	}
+	
+	//restore the grid
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			grid[row][col] = gridSave[row][col];
+		}
+	}
+	return true;	
+}
+
+
+//Checks if the grid is full
+bool checkGridFull(){
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			if(grid[row][col] == 0){
+				return false;
+			}
+		}
+	}
+	
+	return true;
+}
+
+
+
 
 void draw_home_screen() {
 	for(int x = 0; x < resolutionX; x++) {
