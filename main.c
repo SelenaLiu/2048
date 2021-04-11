@@ -1356,7 +1356,7 @@ const uint16_t image2048[50][50] = {
 int resolutionX, resolutionY, n, midScreenX, midScreenY, gridMinX, gridMaxX, gridSideLength, boxSideLength;
 int totalPoints = 0;
 bool gameStart = false;
-bool gameContinue = true, gameWon = false, gameLost = false;
+bool gameWon = false, gameLost = false;
 
 /* Constants for animation */
 #define GRID_LINE_WIDTH 8
@@ -1469,7 +1469,7 @@ int main(void)
 	//spawn_tile();
 	//spawn_tile();
 
-    while (gameContinue)
+    while (1)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
 		draw_grid();
@@ -1633,7 +1633,6 @@ bool combine_tiles(int position, char input){
 				
 				//Game won
 				if(grid[row][position] == 2048){
-					gameContinue = false;
 					gameWon = true;
 				}
 					
@@ -1663,7 +1662,6 @@ bool combine_tiles(int position, char input){
 				
 				//Game won
 				if(grid[row][position] == 2048){
-					gameContinue = false;
 					gameWon = true;
 				}
 				
@@ -1693,7 +1691,6 @@ bool combine_tiles(int position, char input){
 				
 				//Game won
 				if(grid[position][col] == 2048){
-					gameContinue = false;
 					gameWon = true;
 				}
 				
@@ -1723,7 +1720,6 @@ bool combine_tiles(int position, char input){
 				
 				//Game won
 				if(grid[position][col] == 2048){
-					gameContinue = false;
 					gameWon = true;
 				}
 				
@@ -1982,8 +1978,7 @@ void draw_grid() {
 
 void clear_grid() {
 	for (int row = 0; row < 4; row ++) {
-		for (int col = 0; col < 4; col++) {
-			
+		for (int col = 0; col < 4; col++) {	
 			grid[row][col] = 0;  
 		}
 	}
