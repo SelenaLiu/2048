@@ -20,11 +20,18 @@
 #define BLACK 0x0000
 #define ORANGE 0xFC00
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <math.h>
+
 #define ABS(x) (((x) > 0) ? (x) : -(x))
 
-/* Global Variable */
+/* Global Variables */
 int resolutionX, resolutionY, n, midScreenX, midScreenY, gridMinX, gridMaxX, gridSideLength, boxSideLength;
 int totalPoints = 0;
+bool gameContinue = true;
+bool gameWon;
 
 /* Constants for animation */
 #define GRID_LINE_WIDTH 8
@@ -33,10 +40,7 @@ int totalPoints = 0;
 #define FALSE 0
 #define TRUE 1
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <math.h>
+
 
 volatile int pixel_buffer_start; // global variable
 int grid[4][4] = {{0, 0, 0, 0},
@@ -118,7 +122,11 @@ int main(void)
 	// spawn 2 tiles
 	spawn_without_animate();
 	spawn_without_animate();
-    while (1)
+
+	//spawn_tile();
+	//spawn_tile();
+
+    while (gameContinue)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
 		draw_grid();
@@ -128,6 +136,15 @@ int main(void)
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
 		
     }
+	//Victory screen
+	if(gameWon){
+		;
+	}
+	
+	//Game over screen
+	else{
+		;
+	}
 }
 
 const uint16_t image2[50][50] = {
@@ -724,6 +741,21 @@ const uint16_t image2048[50][50] = {
 
 };
 
+/*
+void displayScore(){
+	while(totalPoints > 0){
+		int digit = totalPoints
+	}
+	
+	int thousands = totalPoints/
+	int hundreds
+	int tens = game.currentScore/10;
+	int ones = game.currentScore%10;
+	
+	int displayNum = (hexdisplay[tens] << 8 ) | hexdisplay[ones];
+	*(HEX3_0) = displayNum;
+}*/
+
 void addToPoints(int points) {
 	totalPoints += points;
 }
@@ -740,6 +772,13 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[row][position] == grid[row+1][position]){
 				grid[row][position] *= 2;
+				
+				//Game won
+				if(grid[row][position] == 2048){
+					gameContinue = false;
+					gameWon = true;
+				}
+					
 				//Add new doubled number to points
 				addToPoints(grid[row][position]);
 				
@@ -763,6 +802,13 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[row][position] == grid[row-1][position]){
 				grid[row][position] *= 2;
+				
+				//Game won
+				if(grid[row][position] == 2048){
+					gameContinue = false;
+					gameWon = true;
+				}
+				
 				//Add new doubled number to points
 				addToPoints(grid[row][position]);
 				
@@ -786,6 +832,13 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[position][col] == grid[position][col+1]){
 				grid[position][col] *= 2;
+				
+				//Game won
+				if(grid[position][col] == 2048){
+					gameContinue = false;
+					gameWon = true;
+				}
+				
 				//Add new doubled number to points
 				addToPoints(grid[position][col]);
 				
@@ -809,6 +862,13 @@ bool combine_tiles(int position, char input){
 			//Two adjacent tiles have same value
 			if(grid[position][col] == grid[position][col-1]){
 				grid[position][col] *= 2;
+				
+				//Game won
+				if(grid[position][col] == 2048){
+					gameContinue = false;
+					gameWon = true;
+				}
+				
 				//Add new doubled number to points
 				addToPoints(grid[position][col]);
 				
