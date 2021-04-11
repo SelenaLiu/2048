@@ -1414,20 +1414,11 @@ void spawn_without_animate();
 void displayScore();
 bool checkGridFull();
 bool checkValidMoves();
+void setGlobalVars();
 
 int main(void)
 {
-	//Assign values to global variables
-	//Can put this in a function
-	resolutionX= 320;
-	resolutionY = 240;
-	n = 8;
-	midScreenX = resolutionX / 2;
-	midScreenY = resolutionY / 2;
-	gridMinX = midScreenX - midScreenY;
-	gridMaxX = midScreenX + midScreenY;
-	gridSideLength = gridMaxX - gridMinX;
-	boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
+	setGlobalVars();
 	
 	/* interrupt setup start */
 	set_A9_IRQ_stack(); // initialize the stack pointer for IRQ mode
@@ -1459,9 +1450,11 @@ int main(void)
 	}
 	
 	draw_background();
+	draw_grid();
 	wait_for_vsync();
 	pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
 	draw_background();
+	draw_grid();
 	// spawn 2 tiles
 	spawn_without_animate();
 	spawn_without_animate();
@@ -1472,7 +1465,7 @@ int main(void)
     while (1)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
-		draw_grid();
+		erase_all_tiles();
 		draw_all_tiles();
 		displayScore();
 		
@@ -1522,6 +1515,20 @@ int main(void)
 		}
 		
     }
+}
+
+void setGlobalVars() {
+	//Assign values to global variables
+	//Can put this in a function
+	resolutionX= 320;
+	resolutionY = 240;
+	n = 8;
+	midScreenX = resolutionX / 2;
+	midScreenY = resolutionY / 2;
+	gridMinX = midScreenX - midScreenY;
+	gridMaxX = midScreenX + midScreenY;
+	gridSideLength = gridMaxX - gridMinX;
+	boxSideLength = (gridSideLength - (5 * GRID_LINE_WIDTH)) / 4;
 }
 
 //Checks if there are any valid moves to be made
@@ -1819,7 +1826,6 @@ bool move_tiles(char input){
 			if(combine_tiles(row, input)){moved = true;};
 		}	
 	}
-	erase_all_tiles();
 	return moved;
 	
 }
@@ -2001,7 +2007,7 @@ void erase_tile(int x, int y){
 void erase_all_tiles() {
 	for(int x = 0; x < 4; x++) {
 		for(int y = 0; y < 4; y++) {
-			if (prev_grid[x][y] != 0) {
+			if (prev_grid[y][x] != 0 || grid[y][x] != 0) {
 				erase_tile(x, y);
 			}
 		}
@@ -2023,13 +2029,21 @@ void spawn_tile() {
 	// choose whether 2 or 4
 	int randVal = ((rand() % 1) + 1) * 2;
 	
-	//draw_tile(randX, randY, randVal);
 	volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
-	draw_grid();
+
+	*(pixel_ctrl_ptr + 1) = 0xC8000000; // first store the address in the back buffer
+   
+    wait_for_vsync();
+    pixel_buffer_start = *pixel_ctrl_ptr; // initialize a pointer to the pixel buffer, used by drawing functions
+	erase_all_tiles();
+	draw_all_tiles();
+    *(pixel_ctrl_ptr + 1) = 0xC0000000; // set back pixel buffer to start of SDRAM memory
+    pixel_buffer_start = *(pixel_ctrl_ptr + 1); // we draw on the back buffer
+	erase_all_tiles();
+	draw_all_tiles();
+	
 	// spawn tile animation
 	for(int width = 5; width <= boxSideLength; width += 5) {
-		erase_all_tiles();
-		draw_all_tiles();
 		draw_tile(randX, randY, randVal, width);
 		//switch pixelBuffer
 		wait_for_vsync();
@@ -2232,19 +2246,23 @@ void keyboard_ISR() {
 			if (gameStart) {
 				if (keyBit == 0x75) {
 					if(move_tiles('U')){
-						spawn_without_animate();
+						
+						spawn_tile();
 					}
 				} else if (keyBit == 0x72) { 
 					if(move_tiles('D')){
-						spawn_without_animate();
+						
+						spawn_tile();
 					}
 				} else if (keyBit == 0x6B) { 
 					if(move_tiles('L')){
-						spawn_without_animate();
+						
+						spawn_tile();
 					}
 				} else if (keyBit == 0x74) { 
 					if(move_tiles('R')){
-						spawn_without_animate();
+						
+						spawn_tile();
 					}
 				} else if (keyBit == 0x4B) {
 					gameLost = true;
