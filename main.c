@@ -1455,12 +1455,11 @@ int main(void)
 	pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
 	draw_background();
 	draw_grid();
-	// spawn 2 tiles
+	
+	// spawn initial 2 tiles
 	spawn_without_animate();
 	spawn_without_animate();
 
-	//spawn_tile();
-	//spawn_tile();
 
     while (1)
     {
@@ -1885,9 +1884,7 @@ void draw_all_tiles(){
 void draw_tile(int x, int y, int num, int sideLength){
 	int xStart = gridMinX + (GRID_LINE_WIDTH * (x + 1)) + (boxSideLength * x) + ((boxSideLength / 2) - (sideLength / 2));
 	int yStart = (GRID_LINE_WIDTH * (y + 1)) + (boxSideLength * y) + ((boxSideLength / 2) - (sideLength / 2));
-	
-	//uint16_t number[10][50][50] = {{{**image2, **image4, **image8, **image16, **image32, **image64, **image128, **image256, **image512, **image1024, **image2048}}};
-	
+		
 	switch(num) {
 		case 2: 
 			for(int x = 0; x < sideLength; x++){
@@ -2250,7 +2247,14 @@ void keyboard_ISR() {
 		//keyBit = (PS2_data & 0xFF); // read lower 8 bits of data from keyboard reg
 		if (byte3 == 0x75 || byte3 == 0x72 || byte3 == 0x6B || byte3 == 0x74 || byte3 == 0x29 || byte3 == 0x4B || byte3 == 0x1D) {
 			keyBit = byte3;
-		} 
+		}
+		else if(byte3 == 0xF0 || byte3 == 0xE0){
+			;
+		}
+		else{
+			keyBit = 0;
+		}
+		
 	
 		if (byte3 == 0xF0) { // up arrow
 			if (gameStart) {
