@@ -1773,7 +1773,6 @@ bool move_tiles(char input){
 						pos++;
 						continue;
 					}
-					animate_move(row, pos, col, col, grid[row][col]);
 					grid[pos][col] = grid[row][col];
 					prev_grid[row][col] = grid[row][col];
 					grid[row][col] = 0;
@@ -1843,36 +1842,6 @@ bool move_tiles(char input){
 	}
 	return moved;
 	
-}
-
-//Animate movement of blocks
-void animate_move(int rStart, int rEnd, int cStart, int cEnd, int num) {
-	int dRow = rEnd - rStart;
-	int dCol = cEnd - cStart;
-	
-	if (dRow < 0) {
-		dRow = -1;
-	} else {
-		dRow = 1;
-	}
-	
-	if (dCol < 0) {
-		dCol = -1;
-	} else {
-		dCol = 1;
-	}
-	
-	volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
-	
-	if (dRow == 0) { // moving left and right
-		for(int col = cStart; col <= cEnd; col += dCol) {
-			draw_tile(rStart, col, num, boxSideLength);
-			wait_for_vsync();
-        	pixel_buffer_start = *(pixel_ctrl_ptr + 1);
-		}
-	} else if (dCol == 0) { // moving up and down
-		
-	}
 }
 
 //Draws all the tiles on the current screen
